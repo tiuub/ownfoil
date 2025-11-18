@@ -284,8 +284,9 @@ def index():
         if request.verified_host is not None:
             # enforce client side host verification
             shop["referrer"] = f"https://{request.verified_host}"
-            
+
         shop["files"] = gen_shop_files(db)
+        shop["savegames"] = gen_shop_savegames(db)
 
         if app_settings['shop']['encrypt']:
             return Response(encrypt_shop(shop), mimetype='application/octet-stream')

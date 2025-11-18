@@ -240,6 +240,10 @@ def get_shop_files():
     results = Files.query.options(db.joinedload(Files.apps).joinedload(Apps.title)).all()
 
     for file in results:
+        # Savegames are handled separately for the Tinfoil shop payload
+        if file.extension and file.extension.lower() == 'zip':
+            continue
+
         if file.identified:
             # Get the first app associated with this file using the many-to-many relationship
             app = file.apps[0] if file.apps else None
@@ -262,6 +266,17 @@ def get_shop_files():
         })
 
     return shop_files
+
+def get_files_by_extension(extension):
+    """Return all files whose extension matches the provided one (case-insensitive)."""
+    if not extension:
+        return []
+
+    normalized_extension = extension.lower()
+    return Files.query.filter(db.func.lower(Files.extension) == normalized_extension).all()
+
+def get_savegame_files():
+    return [to_dict(file) for file in get_files_by_extension('zip')]
 
 def get_libraries():
     return Libraries.query.all()

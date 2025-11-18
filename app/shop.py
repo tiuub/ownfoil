@@ -6,6 +6,10 @@ from Crypto.Cipher import AES
 import zstandard as zstd
 import random
 import json
+import os
+import re
+
+from titles import get_app_id_from_filename
 
 # https://github.com/blawar/tinfoil/blob/master/docs/files/public.key 1160174fa2d7589831f74d149bc403711f3991e4
 TINFOIL_PUBLIC_KEY = '''-----BEGIN PUBLIC KEY-----
@@ -27,6 +31,34 @@ def gen_shop_files(db):
             'size': file["size"]
         })
     return shop_files
+
+SAVEGAME_TITLEID_REGEX = re.compile(r'([0-9A-Fa-f]{16})')
+
+def _get_title_id_from_filename(filename):
+    app_id = get_app_id_from_filename(filename)
+    if app_id:
+        return app_id.upper()
+
+    match = SAVEGAME_TITLEID_REGEX.search(filename)
+    if match:
+        return match.group(1).upper()
+
+    return None
+
+def gen_shop_savegames(db):
+    savegames = []
+    files = get_savegame_files()
+
+    for file in files:
+        title_id = _get_title_id_from_filename(file['filename'])
+        savegames.append({
+            "titleid": title_id,
+            "name": os.path.splitext(file['filename'])[0],
+            "url": f"/api/get_game/{file['id']}#{file['filename']}",
+            "size": file["size"]
+        })
+
+    return savegames
 
 def encrypt_shop(shop):
     input = json.dumps(shop).encode('utf-8')
